@@ -1,7 +1,7 @@
 using ArticleApi.Dtos;
 using ArticleApi.Services;
 using Microsoft.AspNetCore.Mvc;
-
+using ArticleApi.Entities;
 namespace ArticleApi.Controllers;
 
 [ApiController]
@@ -18,9 +18,22 @@ public class ArticlesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PagedResult<ArticleListItemDto>>> GetPage([FromQuery] ArticleListQuery query)
     {
+        // Enum values must be exactly one name (?status=Published). This also rejects numbers
+        // (?status=1) and comma lists (?status=Draft,Published), which .NET would otherwise combine.
+        if (!IsEnumName<Status>("status") || !IsEnumName<ArticleSortBy>("sortBy") || !IsEnumName<SortOrder>("sortOrder"))
+        {
+            return Problem(detail: "status, sortBy and sortOrder must each be a single name, for example status=Published.",
+                           statusCode: StatusCodes.Status400BadRequest);
+        }
+
         return Ok(await _articles.GetPageAsync(query));
     }
-
+    // True if the parameter is missing, or exactly one of the enum's names (ignoring case)
+    private bool IsEnumName<TEnum>(string key) where TEnum : struct, Enum
+    {
+        var raw = Request.Query[key].ToString().Trim();
+        return raw.Length == 0 || Enum.GetNames<TEnum>().Contains(raw, StringComparer.OrdinalIgnoreCase);
+    }
     [HttpGet("{id:int}")]
     public async Task<ActionResult<ArticleDetailsDto>> GetById(int id)
     {

@@ -15,6 +15,14 @@ An **article** is a container with a status. Its text lives in **contents**: eac
   dotnet tool install --global dotnet-ef
   ```
 
+**To install anything that is missing in one step**, run this from the repository folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+`setup.ps1` checks for each requirement above, skips what is already installed, and installs the rest with `winget`, the package manager built into Windows 10 and 11. `-ExecutionPolicy Bypass` is needed because Windows blocks unsigned scripts by default. Windows asks for administrator permission while LocalDB is installed. If LocalDB is missing, the script installs the current version (SQL Server 2025 LocalDB); the project sets EF Core to SQL Server 2016's compatibility level, which newer versions also support. When it finishes, open a new terminal so the updated PATH applies.
+
 ## Getting started
 
 ```powershell
@@ -458,6 +466,7 @@ The task leaves the following points open. These are the choices made, and why.
 ## Project structure
 
 ```
+setup.ps1           installs the requirements on Windows
 database/           the two report scripts
 ArticleApi/
 ├── Controllers/    HTTP endpoints: routes and status codes only
