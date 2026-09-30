@@ -1,5 +1,5 @@
-using ArticleApi.Services;
 using ArticleApi.Dtos;
+using ArticleApi.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ArticleApi.Controllers;
@@ -9,6 +9,7 @@ namespace ArticleApi.Controllers;
 public class ArticlesController : ControllerBase
 {
     private readonly IArticleService _articles;
+
     public ArticlesController(IArticleService articles)
     {
         _articles = articles;
@@ -26,21 +27,23 @@ public class ArticlesController : ControllerBase
         var article = await _articles.GetByIdAsync(id);
         return article is null ? NotFound() : Ok(article);
     }
+
     [HttpPost]
     public async Task<ActionResult<ArticleDetailsDto>> Create(CreateArticleRequest request)
     {
         var article = await _articles.CreateAsync(request);
         return CreatedAtAction(nameof(GetById), new { id = article.Id }, article);
     }
+
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateArticleRequest request)
     {
         return await _articles.UpdateAsync(id, request) ? NoContent() : NotFound();
     }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id)
     {
         return await _articles.DeleteAsync(id) ? NoContent() : NotFound();
     }
-
 }

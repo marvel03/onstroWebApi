@@ -54,6 +54,14 @@ public static class DbSeeder
         db.Users.AddRange(alice, bruno, carmen, dmitri, elena, farid);
         db.Articles.AddRange(guide, recipes, archive, interview, empty);
         db.Articles.AddRange(generated);
+
+        // Report B's rule: the language and the recent author must be on the same content.
+        // English is by carmen (old account), French by alice (recent), so this article appears
+        // in the French report but not the English one. Added last so the other Ids don't change.
+        var mixedAuthors = new Article { Status = Status.Published, CreatedAt = now.AddDays(-25) };
+        mixedAuthors.Contents.Add(NewContent("Remote work tips", Language.English, Status.Published, carmen, now.AddDays(-25)));
+        mixedAuthors.Contents.Add(NewContent("Conseils pour le télétravail", Language.French, Status.Published, alice, now.AddDays(-24)));
+        db.Articles.Add(mixedAuthors);
         db.Contents.Add(standalone);
         db.SaveChanges();
     }

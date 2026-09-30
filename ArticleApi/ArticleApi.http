@@ -1,3 +1,104 @@
 @ArticleApi_HostAddress = http://localhost:5229
 
-###
+# Example requests for the VS Code REST Client extension: click "Send Request" above one.
+# Ids refer to the sample data created on the first run.
+
+### List articles (default: newest first, 10 per page)
+GET {{ArticleApi_HostAddress}}/api/articles
+
+### List articles: page 2, 5 per page
+GET {{ArticleApi_HostAddress}}/api/articles?page=2&pageSize=5
+
+### List articles: sorted by title (English title first), A to Z
+GET {{ArticleApi_HostAddress}}/api/articles?sortBy=title
+
+### List articles: sorted by title, Z to A
+GET {{ArticleApi_HostAddress}}/api/articles?sortBy=title&sortOrder=desc
+
+### List articles: only Published
+GET {{ArticleApi_HostAddress}}/api/articles?status=Published
+
+### Article details with all its contents
+GET {{ArticleApi_HostAddress}}/api/articles/1
+
+### Create an article
+POST {{ArticleApi_HostAddress}}/api/articles
+Content-Type: application/json
+
+{
+  "status": "Draft"
+}
+
+### Update an article (use the Id returned when creating)
+PUT {{ArticleApi_HostAddress}}/api/articles/43
+Content-Type: application/json
+
+{
+  "status": "Published"
+}
+
+### Delete an article (its contents are deleted too)
+DELETE {{ArticleApi_HostAddress}}/api/articles/43
+
+### Get one content
+GET {{ArticleApi_HostAddress}}/api/contents/1
+
+### Create a content inside article 1
+POST {{ArticleApi_HostAddress}}/api/contents
+Content-Type: application/json
+
+{
+  "title": "My first content",
+  "body": "Some text",
+  "authorId": 1,
+  "status": "Draft",
+  "language": "English",
+  "articleId": 1
+}
+
+### Create a content that belongs to no article
+POST {{ArticleApi_HostAddress}}/api/contents
+Content-Type: application/json
+
+{
+  "title": "A standalone note",
+  "body": "Not part of any article",
+  "authorId": 2,
+  "status": "Draft",
+  "language": "French"
+}
+
+### Update a content: PUT replaces every field (use the Id returned when creating)
+PUT {{ArticleApi_HostAddress}}/api/contents/75
+Content-Type: application/json
+
+{
+  "title": "My first content, edited",
+  "body": "Updated text",
+  "authorId": 5,
+  "status": "Published",
+  "language": "English",
+  "articleId": 1
+}
+
+### Delete a content
+DELETE {{ArticleApi_HostAddress}}/api/contents/75
+
+### Error: author does not exist -> 400
+POST {{ArticleApi_HostAddress}}/api/contents
+Content-Type: application/json
+
+{
+  "title": "x",
+  "body": "y",
+  "authorId": 999,
+  "status": "Draft",
+  "language": "English"
+}
+
+### Error: missing status -> 400
+POST {{ArticleApi_HostAddress}}/api/articles
+Content-Type: application/json
+
+{
+}
