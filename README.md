@@ -8,7 +8,7 @@ An **article** is a container with a status. Its text lives in **contents**: eac
 
 - **Windows.** The database is SQL Server Express LocalDB, which only runs on Windows.
 - **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)**
-- **SQL Server Express LocalDB**, with the default instance `(localdb)\MSSQLLocalDB`. It is installed with Visual Studio, or from the SQL Server Express installer. The project was tested on LocalDB 2016 (version 13.0).
+- **SQL Server Express LocalDB**, with the default instance `(localdb)\MSSQLLocalDB`. It is installed with Visual Studio, or from the SQL Server Express installer. **Report A needs SQL Server 2017 or later**, because it uses `STRING_AGG`. The API itself also runs on LocalDB 2016, the version it was built on. To check your version, run `sqllocaldb versions`.
 - **Optional: the EF Core command-line tool**, needed only to reset the database:
 
   ```powershell
@@ -21,7 +21,7 @@ An **article** is a container with a status. Its text lives in **contents**: eac
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
 
-`setup.ps1` checks for each requirement above, skips what is already installed, and installs the rest with `winget`, the package manager built into Windows 10 and 11. `-ExecutionPolicy Bypass` is needed because Windows blocks unsigned scripts by default. Windows asks for administrator permission while LocalDB is installed. If LocalDB is missing, the script installs the current version (SQL Server 2025 LocalDB); the project sets EF Core to SQL Server 2016's compatibility level, which newer versions also support. When it finishes, open a new terminal so the updated PATH applies.
+`setup.ps1` checks for each requirement above, skips what is already installed, and installs the rest with `winget`, the package manager built into Windows 10 and 11. `-ExecutionPolicy Bypass` is needed because Windows blocks unsigned scripts by default. Windows asks for administrator permission while LocalDB is installed. If LocalDB is missing, the script installs the current version, SQL Server 2025 LocalDB. **If you already have LocalDB, the script leaves it alone, whatever its version**, so if yours is 2016 you need to install a newer one yourself before running Report A. When the script finishes, open a new terminal so the updated PATH applies.
 
 ## Getting started
 
@@ -386,7 +386,7 @@ Any HTTP client works: Postman, curl, or the VS Code REST Client extension with 
 
 ## Reports
 
-The two reports are SQL scripts in the `database/` folder. They are written for SQL Server 2016, which has no `STRING_AGG`.
+The two reports are SQL scripts in the `database/` folder. Report A needs SQL Server 2017 or later; Report B also runs on SQL Server 2016.
 
 **To run one in SQL Server Management Studio:** open the file, select the `ArticleDb_…` database in the toolbar's database dropdown, and press F5. The scripts contain no `USE` statement, because the database name depends on the folder the project is in.
 
@@ -399,7 +399,7 @@ sqlcmd -S "(localdb)\MSSQLLocalDB" -E -d ArticleDb_XXXXXXXX -i database\ReportA_
 
 ### Report A: authors and their articles
 
-`database/ReportA_AuthorArticleIds.sql` lists every user with a JSON array of the Ids of the articles they have written content for. Each article appears once per author, in ascending order. Users who have written no articles appear with `[]`. The list is built with `FOR XML PATH` and `STUFF`.
+`database/ReportA_AuthorArticleIds.sql` lists every user with a JSON array of the Ids of the articles they have written content for. Each article appears once per author, in ascending order. Users who have written no articles appear with `[]`. The list is built with `STRING_AGG`, which is why this report needs SQL Server 2017 or later.
 
 With the sample data:
 
@@ -460,7 +460,7 @@ The task leaves the following points open. These are the choices made, and why.
 
 **Environment**
 
-- Built and tested with SQL Server 2016 LocalDB. EF Core is set to SQL Server 2016's compatibility level (130), so it only generates SQL that version supports.
+- The API was built and tested on SQL Server 2016 LocalDB. EF Core is set to SQL Server 2016's compatibility level (130), so it only generates SQL that version supports; newer SQL Server versions support that level too. Report A uses `STRING_AGG` and needs SQL Server 2017 or later.
 - The database is created, migrated and filled with sample data automatically, in the Development environment only. The sample dates are relative to the day the database is created, so the time-based report always has matching data.
 
 ## Project structure
