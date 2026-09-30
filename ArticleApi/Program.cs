@@ -1,8 +1,10 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json.Serialization;
 using ArticleApi.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using ArticleApi.Services;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -22,10 +24,15 @@ var connectionString = new SqlConnectionStringBuilder(
     InitialCatalog = $"ArticleDb_{pathHash}"
 }.ConnectionString;
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false)));
+
 builder.Services.AddOpenApi();
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString, sql => sql.UseCompatibilityLevel(130)));
+builder.Services.AddScoped<IArticleService, ArticleService>();
+builder.Services.AddScoped<IContentService, ContentService>();
 
 
 var app = builder.Build();
