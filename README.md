@@ -21,7 +21,12 @@ An **article** is a container with a status. Its text lives in **contents**: eac
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
 
-`setup.ps1` checks for each requirement above, skips what is already installed, and installs the rest with `winget`, the package manager built into Windows 10 and 11. `-ExecutionPolicy Bypass` is needed because Windows blocks unsigned scripts by default. Windows asks for administrator permission while LocalDB is installed. If LocalDB is missing, the script installs the current version, SQL Server 2025 LocalDB. **If you already have LocalDB, the script leaves it alone, whatever its version**, so if yours is 2016 you need to install a newer one yourself before running Report A. When the script finishes, open a new terminal so the updated PATH applies.
+`setup.ps1` checks for each requirement above, skips what is already installed, and installs the rest with `winget`, the package manager built into Windows 10 and 11. `-ExecutionPolicy Bypass` is needed because Windows blocks unsigned scripts by default. Windows asks for administrator permission while LocalDB is installed. If LocalDB is missing, the script installs the current version, SQL Server 2025 LocalDB. **If you only have an older LocalDB, such as 2016, it asks before doing anything:**
+
+1. *Install SQL Server 2025 LocalDB alongside it? [Y/N]*
+2. *Recreate MSSQLLocalDB now? [Y/N]* An existing instance keeps the version it was created with, even after a newer LocalDB is installed, so the `MSSQLLocalDB` instance the app uses has to be deleted and created again on the new version. **This detaches every database in that instance.** Their files stay on disk and can be attached again, for example in SSMS, but close anything using the instance first.
+
+Answering N to either question leaves your setup as it is: the API still works, and the script's final message says that Report A needs a newer LocalDB. When the script finishes, open a new terminal so the updated PATH applies.
 
 ## Getting started
 
