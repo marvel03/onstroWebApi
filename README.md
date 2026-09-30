@@ -100,7 +100,7 @@ The command needs the EF Core command-line tool (see [Requirements](#requirement
 
 ## Using the API
 
-All requests and responses are JSON.
+All requests and responses are JSON. In the examples below, a **request body** is the JSON you send with a POST or PUT; a **response** is the JSON the API sends back. GET and DELETE requests have no request body.
 
 - **Enum values are sent and returned as text**, not numbers:
   - `status`: `Draft`, `Published` or `Unpublished`
@@ -148,7 +148,9 @@ Each row shows the article's **title, author and status**. An article can have s
 
 An article with no contents has a `null` title and author, and always appears **last** when sorting by title, in either direction. Filtering, sorting and paging all happen in the database query.
 
-Example: `GET /api/articles?pageSize=2`
+Example request: `GET /api/articles?pageSize=2` (no request body)
+
+Response: **200 OK**
 
 ```json
 {
@@ -177,9 +179,9 @@ Example: `GET /api/articles?pageSize=2`
 
 ### Get one article, with its contents
 
-```
-GET /api/articles/8
-```
+Example request: `GET /api/articles/8` (no request body)
+
+Response: **200 OK**, or **404 Not Found** if the article does not exist
 
 ```json
 {
@@ -221,21 +223,66 @@ The exact dates depend on when the database was created.
 
 **Create:** `POST /api/articles`
 
+Request body (`status` is required):
+
 ```json
 {
   "status": "Draft"
 }
 ```
 
-Returns **201 Created** with the new article, and a `Location` header with its address. `status` is required.
+Response: **201 Created**, with a `Location` header giving the new article's address, and the new article in the body:
 
-**Update:** `PUT /api/articles/{id}`, with the same body. Returns **204 No Content**, or 404 if the article does not exist.
+```json
+{
+  "id": 43,
+  "status": "Draft",
+  "createdAt": "2026-09-30T10:15:00.0000000Z",
+  "contents": []
+}
+```
 
-**Delete:** `DELETE /api/articles/{id}`. Returns **204 No Content**, or 404. **The article's contents are deleted with it.**
+**Update:** `PUT /api/articles/{id}`, for example `PUT /api/articles/43`
+
+Request body:
+
+```json
+{
+  "status": "Published"
+}
+```
+
+Response: **204 No Content**, with no response body, or **404 Not Found** if the article does not exist.
+
+**Delete:** `DELETE /api/articles/{id}` (no request body)
+
+Response: **204 No Content**, with no response body, or **404 Not Found**. **The article's contents are deleted with it.**
+
+### Get one content
+
+Example request: `GET /api/contents/1` (no request body)
+
+Response: **200 OK**, or **404 Not Found** if the content does not exist:
+
+```json
+{
+  "id": 1,
+  "title": "Getting started with EF Core",
+  "body": "Sample English text for \"Getting started with EF Core\".",
+  "authorId": 1,
+  "authorName": "alice",
+  "status": "Published",
+  "language": "English",
+  "createdAt": "2026-09-10T00:44:38.5892938Z",
+  "articleId": 1
+}
+```
 
 ### Create, update and delete a content
 
 **Create:** `POST /api/contents`
+
+Request body:
 
 ```json
 {
@@ -248,24 +295,71 @@ Returns **201 Created** with the new article, and a `Location` header with its a
 }
 ```
 
+The fields of the request body:
+
 | Field | Rules |
 |---|---|
 | `title` | required, not empty |
 | `body` | required, not empty |
-| `authorId` | required; must be an existing user |
+| `authorId` | required; the Id of an existing user (see [Sample data](#sample-data)) |
 | `status` | required |
 | `language` | required |
-| `articleId` | optional; must be an existing article. Leave it out, or send `null`, for a content that belongs to no article |
-
-Returns **201 Created** with the new content, including the author's name, and a `Location` header.
+| `articleId` | optional; the Id of an existing article. Leave it out, or send `null`, for a content that belongs to no article |
 
 An article may have several contents in the same language.
 
-**Update:** `PUT /api/contents/{id}`, with the same body. PUT replaces every field, so send all of them. It can also move a content to another article, or detach it with `"articleId": null`. Returns **204 No Content**, or 404 if the content does not exist.
+Response: **201 Created**, with a `Location` header giving the new content's address, and the new content in the body, including the author's name:
 
-**Delete:** `DELETE /api/contents/{id}`. Returns **204 No Content**, or 404.
+```json
+{
+  "id": 75,
+  "title": "My first content",
+  "body": "Some text",
+  "authorId": 1,
+  "authorName": "alice",
+  "status": "Draft",
+  "language": "English",
+  "createdAt": "2026-09-30T10:20:00.0000000Z",
+  "articleId": 1
+}
+```
 
-**Example error**, when creating a content with `"authorId": 999`:
+**Update:** `PUT /api/contents/{id}`, for example `PUT /api/contents/75`
+
+Request body. PUT replaces every field, so send all of them, including any you are not changing:
+
+```json
+{
+  "title": "My first content, edited",
+  "body": "Updated text",
+  "authorId": 5,
+  "status": "Published",
+  "language": "English",
+  "articleId": 1
+}
+```
+
+This can also move a content to another article, or detach it from its article with `"articleId": null`.
+
+Response: **204 No Content**, with no response body, or **404 Not Found** if the content does not exist.
+
+**Delete:** `DELETE /api/contents/{id}` (no request body)
+
+Response: **204 No Content**, with no response body, or **404 Not Found**.
+
+**Example error.** Request body sent to `POST /api/contents`, with an author that does not exist:
+
+```json
+{
+  "title": "x",
+  "body": "y",
+  "authorId": 999,
+  "status": "Draft",
+  "language": "English"
+}
+```
+
+Response: **400 Bad Request**
 
 ```json
 {
@@ -276,9 +370,11 @@ An article may have several contents in the same language.
 }
 ```
 
+The Ids and dates in these examples will differ from yours.
+
 ### Sending requests
 
-Any HTTP client works: Postman, curl, or the VS Code REST Client extension with `ArticleApi/ArticleApi.http`. With Postman, choose the method from the dropdown and put only the URL in the address box, for example `http://localhost:5229/api/articles`. For POST and PUT, choose **Body → raw → JSON**.
+Any HTTP client works: Postman, curl, or the VS Code REST Client extension with `ArticleApi/ArticleApi.http`. With Postman, choose the method from the dropdown and put only the URL in the address box, for example `http://localhost:5229/api/articles`. For POST and PUT, put the request body under **Body → raw → JSON**. The response appears in the lower panel.
 
 ## Reports
 
