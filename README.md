@@ -8,11 +8,11 @@ An **article** is a container with a status. Its text lives in **contents**: eac
 
 - **Windows.** The database is SQL Server Express LocalDB, which only runs on Windows.
 - **[.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)**
-- **SQL Server Express LocalDB**, with the default instance `(localdb)\MSSQLLocalDB`. It is installed with Visual Studio, or from the SQL Server Express installer. **Report A needs SQL Server 2017 or later**, because it uses `STRING_AGG`. The API itself also runs on LocalDB 2016, the version it was built on. To check your version, run `sqllocaldb versions`.
+- **SQL Server Express LocalDB**, with the default instance `(localdb)\MSSQLLocalDB`. It is installed with Visual Studio, or from the SQL Server Express installer. **Report A needs SQL Server 2017 or later**, because it uses `STRING_AGG`. The API was built on LocalDB 2016 and also tested on LocalDB 2025, where Report A runs too. To check your version, run `sqllocaldb versions`.
 - **Optional: the EF Core command-line tool**, needed only to reset the database:
 
   ```powershell
-  dotnet tool install --global dotnet-ef
+  dotnet tool install --global dotnet-ef --version 10.0.12
   ```
 
 **To install anything that is missing in one step**, run this from the repository folder:
@@ -46,7 +46,9 @@ This happens in the Development environment, which `dotnet run` selects through 
 
 Each copy of the project gets its own database, named `ArticleDb_` followed by a code derived from the folder path, so two clones on the same machine never clash.
 
-**To run with HTTPS**, use the `https` launch profile. It listens on **https://localhost:7010** as well as http://localhost:5229:
+**To open the code in an IDE**, open `ArticleApi.sln` in Visual Studio or Rider, or open the repository folder in VS Code with the C# Dev Kit extension. Visual Studio starts the `https` profile, so the app is at https://localhost:7010, and on the first run it asks you to trust the .NET development certificate. The database is set up the same way as with `dotnet run`.
+
+**To run with HTTPS**, use the `https` launch profile. It listens on **https://localhost:7010**, and requests to http://localhost:5229 are redirected to it (307):
 
 ```powershell
 dotnet run --project ArticleApi --launch-profile https
@@ -123,17 +125,19 @@ All requests and responses are JSON. In the examples below, a **request body** i
 
 ### Endpoints
 
-| Method | URL | What it does | Success |
-|---|---|---|---|
-| GET | `/api/articles` | Paginated list of articles | 200 |
-| GET | `/api/articles/{id}` | One article with all its contents | 200 |
-| POST | `/api/articles` | Create an article | 201 |
-| PUT | `/api/articles/{id}` | Update an article | 204 |
-| DELETE | `/api/articles/{id}` | Delete an article **and all its contents** | 204 |
-| GET | `/api/contents/{id}` | One content | 200 |
-| POST | `/api/contents` | Create a content | 201 |
-| PUT | `/api/contents/{id}` | Update a content | 204 |
-| DELETE | `/api/contents/{id}` | Delete a content | 204 |
+Parameters are either part of the URL (**path**, such as `{id}`), added after `?` (**query**), or sent as JSON (**body**).
+
+| Method | URL | What it does | Parameters | Example | Success |
+|---|---|---|---|---|---|
+| GET | `/api/articles` | Paginated list of articles | **Query**, all optional: `page`, `pageSize`, `status`, `sortBy`, `sortOrder` (see [List articles](#list-articles)) | `GET /api/articles?page=1&pageSize=5&status=Published&sortBy=title` | 200 |
+| GET | `/api/articles/{id}` | One article with all its contents | **Path**: `id`, the article's Id | `GET /api/articles/8` | 200 |
+| POST | `/api/articles` | Create an article | **Body**: `status` (required) | `POST /api/articles` with body `{ "status": "Draft" }` | 201 |
+| PUT | `/api/articles/{id}` | Update an article | **Path**: `id`. **Body**: `status` (required) | `PUT /api/articles/43` with body `{ "status": "Published" }` | 204 |
+| DELETE | `/api/articles/{id}` | Delete an article **and all its contents** | **Path**: `id` | `DELETE /api/articles/43` | 204 |
+| GET | `/api/contents/{id}` | One content | **Path**: `id`, the content's Id | `GET /api/contents/1` | 200 |
+| POST | `/api/contents` | Create a content | **Body**: `title`, `body`, `authorId`, `status`, `language` (required); `articleId` (optional) (see [the field rules](#create-update-and-delete-a-content)) | `POST /api/contents` with body `{ "title": "Hello", "body": "Some text", "authorId": 1, "status": "Draft", "language": "English", "articleId": 1 }` | 201 |
+| PUT | `/api/contents/{id}` | Update a content | **Path**: `id`. **Body**: the same fields as create, all of them | `PUT /api/contents/75` with body `{ "title": "Hello, edited", "body": "New text", "authorId": 1, "status": "Published", "language": "English", "articleId": 1 }` | 204 |
+| DELETE | `/api/contents/{id}` | Delete a content | **Path**: `id` | `DELETE /api/contents/75` | 204 |
 
 ### List articles
 
@@ -465,12 +469,13 @@ The task leaves the following points open. These are the choices made, and why.
 
 **Environment**
 
-- The API was built and tested on SQL Server 2016 LocalDB. EF Core is set to SQL Server 2016's compatibility level (130), so it only generates SQL that version supports; newer SQL Server versions support that level too. Report A uses `STRING_AGG` and needs SQL Server 2017 or later.
+- The API was built on SQL Server 2016 LocalDB, and the API and both reports were also tested on SQL Server 2025 LocalDB. EF Core is set to SQL Server 2016's compatibility level (130), so it only generates SQL that version supports; newer SQL Server versions support that level too. Report A uses `STRING_AGG` and needs SQL Server 2017 or later.
 - The database is created, migrated and filled with sample data automatically, in the Development environment only. The sample dates are relative to the day the database is created, so the time-based report always has matching data.
 
 ## Project structure
 
 ```
+ArticleApi.sln      the solution file: open this in Visual Studio or Rider
 setup.ps1           installs the requirements on Windows
 database/           the two report scripts
 ArticleApi/
